@@ -1,0 +1,172 @@
+// OpenClaw gateway config for Lacakin — wow-factor edition.
+//
+// Field-name notes (verified against OpenClaw docs 2026-05-15):
+//   - Telegram token field is `botToken`, NOT `token`.
+//   - `promptFile` is NOT a real field. Agents read their system + heartbeat
+//     prompts from their own `workspace` via the `read` tool. setup_vps.sh
+//     distributes the .md files into each workspace before gateway boot.
+//   - `mcp.servers.<name>: {command, args, env?}` is documented verbatim.
+{
+  channels: {
+    telegram: {
+      enabled: true,
+      accounts: {
+        orchestrator: { botToken: "${TELEGRAM_TOKEN_ORCHESTRATOR}" },
+        cctv:         { botToken: "${TELEGRAM_TOKEN_CCTV}" },
+        marketplace:  { botToken: "${TELEGRAM_TOKEN_MARKETPLACE}" },
+        parts:        { botToken: "${TELEGRAM_TOKEN_PARTS}" },
+        sosmed:       { botToken: "${TELEGRAM_TOKEN_SOSMED}" },
+        polisi:       { botToken: "${TELEGRAM_TOKEN_POLISI}" },
+        report:       { botToken: "${TELEGRAM_TOKEN_REPORT}" },
+      },
+    },
+  },
+
+  bindings: [
+    { agentId: "orchestrator", match: { channel: "telegram", accountId: "orchestrator" } },
+    { agentId: "cctv-bandung", match: { channel: "telegram", accountId: "cctv" } },
+    { agentId: "marketplace",  match: { channel: "telegram", accountId: "marketplace" } },
+    { agentId: "parts",        match: { channel: "telegram", accountId: "parts" } },
+    { agentId: "sosmed",       match: { channel: "telegram", accountId: "sosmed" } },
+    { agentId: "polisi",       match: { channel: "telegram", accountId: "polisi" } },
+    { agentId: "report",       match: { channel: "telegram", accountId: "report" } },
+  ],
+
+  broadcast: {
+    "${LACAKIN_GROUP_ID}": [
+      "cctv-bandung", "marketplace", "parts",
+      "sosmed", "polisi", "report",
+      // orchestrator deliberately NOT in broadcast — it posts via its own bot
+      // by direct invocation only (controlled by SYSTEM.md in its workspace).
+    ],
+  },
+
+  tools: {
+    agentToAgent: {
+      enabled: true,
+      allow: ["orchestrator","cctv-bandung","marketplace","parts","sosmed","polisi","report"],
+    },
+  },
+
+  agents: {
+    defaults: {
+      sandbox: { mode: "non-main", scope: "session" },
+      heartbeat: { every: "0m" },
+      model: "anthropic/claude-haiku-4-5-20251001",
+    },
+
+    list: [
+      {
+        id: "orchestrator",
+        name: "Lacakin",
+        workspace: "~/lacakin/workspace-main",
+        model: "anthropic/claude-opus-4-7",
+        thinkingDefault: "high",
+        sandbox: { mode: "off" },
+        identity: { name: "Lacakin", emoji: "🛵", theme: "calm investigator" },
+        groupChat: { mentionPatterns: ["@lacakin_bot","@lacakin"] },
+        tools: {
+          allow: ["read","write","edit","sessions_spawn","sessions_send","session_status","sessions_list"],
+          deny: ["exec","browser"],
+        },
+        subagents: { allowAgents: ["cctv-bandung","marketplace","parts","sosmed","polisi","report"] },
+        mcp: ["db-mcp","a2a-mcp"],
+        prompt: "Anda Lacakin. Sebelum merespons, baca file ./SYSTEM.md di workspace Anda untuk instruksi lengkap.",
+      },
+
+      {
+        id: "cctv-bandung",
+        workspace: "~/lacakin/workspace-cctv",
+        identity: { name: "Mata Bandung", emoji: "👁️", theme: "lookout" },
+        groupChat: { mentionPatterns: ["@mata_bandung_bot","@mata"] },
+        sandbox: { mode: "all", scope: "agent" },
+        tools: { allow: ["read","write","browser"], deny: ["exec","edit","apply_patch"] },
+        mcp: ["browser-mcp","vision-mcp","db-mcp","a2a-mcp"],
+        heartbeat: {
+          every: "${HB_CCTV}",
+          lightContext: true,
+          isolatedSession: false,
+          skipWhenBusy: true,
+          prompt: "Run CCTV tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md for full instructions.",
+          timeoutSeconds: 90,
+        },
+      },
+
+      {
+        id: "marketplace",
+        workspace: "~/lacakin/workspace-marketplace",
+        identity: { name: "Pemantau Pasar", emoji: "🛒", theme: "market trader" },
+        groupChat: { mentionPatterns: ["@pasar_bot","@pasar"] },
+        sandbox: { mode: "all", scope: "agent" },
+        tools: { allow: ["read","write","browser"] },
+        mcp: ["browser-mcp","vision-mcp","db-mcp","a2a-mcp"],
+        heartbeat: { every: "${HB_MARKETPLACE}", lightContext: true,
+          prompt: "Marketplace tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md.",
+          timeoutSeconds: 90, skipWhenBusy: true },
+      },
+
+      {
+        id: "parts",
+        workspace: "~/lacakin/workspace-parts",
+        identity: { name: "Pemburu Suku Cadang", emoji: "🔧", theme: "parts specialist" },
+        groupChat: { mentionPatterns: ["@cadang_bot","@cadang"] },
+        sandbox: { mode: "all", scope: "agent" },
+        tools: { allow: ["read","write","browser"] },
+        mcp: ["browser-mcp","vision-mcp","db-mcp","a2a-mcp"],
+        heartbeat: { every: "${HB_PARTS}", lightContext: true,
+          prompt: "Parts tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md.",
+          timeoutSeconds: 120, skipWhenBusy: true },
+      },
+
+      {
+        id: "sosmed",
+        workspace: "~/lacakin/workspace-sosmed",
+        identity: { name: "Pengintai Sosmed", emoji: "📱", theme: "social media stalker" },
+        groupChat: { mentionPatterns: ["@sosmed_bot","@sosmed"] },
+        sandbox: { mode: "all", scope: "agent" },
+        tools: { allow: ["read","write","browser"] },
+        mcp: ["browser-mcp","vision-mcp","db-mcp","a2a-mcp"],
+        heartbeat: { every: "${HB_SOSMED}", lightContext: true,
+          prompt: "Social media tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md.",
+          timeoutSeconds: 90, skipWhenBusy: true },
+      },
+
+      {
+        id: "polisi",
+        workspace: "~/lacakin/workspace-polisi",
+        identity: { name: "Polisi-AI", emoji: "👮", theme: "birokrat" },
+        groupChat: { mentionPatterns: ["@polisi_ai_bot","@polisi"] },
+        sandbox: { mode: "off" },
+        tools: { allow: ["read","write"] },
+        mcp: ["db-mcp","polisi-mcp"],
+        prompt: "Anda Polisi-AI. Sebelum merespons, baca ./SYSTEM.md untuk instruksi lengkap.",
+        // No heartbeat — invoked on-demand by orchestrator or @mention.
+      },
+
+      {
+        id: "report",
+        workspace: "~/lacakin/workspace-report",
+        identity: { name: "Pencatat Laporan", emoji: "📋", theme: "neutral chronicler" },
+        groupChat: { mentionPatterns: ["@laporan_bot","@laporan"] },
+        model: "anthropic/claude-opus-4-7",
+        sandbox: { mode: "off" },
+        tools: { allow: ["read","write"] },
+        mcp: ["db-mcp","a2a-mcp"],
+        prompt: "Anda Pencatat Laporan. Sebelum merespons, baca ./SYSTEM.md untuk instruksi lengkap.",
+        heartbeat: { every: "${HB_REPORT}", lightContext: false,
+          prompt: "Generate periodic synthesis report. Read ./SYSTEM.md untuk instruksi lengkap.",
+          timeoutSeconds: 60 },
+      },
+    ],
+  },
+
+  mcp: {
+    servers: {
+      "browser-mcp": { command: "python", args: ["-m","mcp.browser_mcp.server"], cwd: ".." },
+      "vision-mcp":  { command: "python", args: ["-m","mcp.vision_mcp.server"],  cwd: ".." },
+      "db-mcp":      { command: "python", args: ["-m","mcp.db_mcp.server"],      cwd: ".." },
+      "a2a-mcp":     { command: "python", args: ["-m","mcp.a2a_mcp.server"],     cwd: ".." },
+      "polisi-mcp":  { command: "python", args: ["-m","mcp.polisi_mcp.server"],  cwd: ".." },
+    },
+  },
+}
