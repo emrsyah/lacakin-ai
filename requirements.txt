@@ -1,10 +1,9 @@
 mcp>=1.0.0
 playwright>=1.45
-open_clip_torch>=2.24
-torch>=2.2
 Pillow>=10.0
 paddleocr>=2.7
 paddlepaddle>=2.6
+requests>=2.32
 pydantic>=2.6
 anthropic>=0.40
 pytest>=8.0

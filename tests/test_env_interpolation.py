@@ -24,6 +24,7 @@ def test_demo_env_exports_expected_keys():
     assert env["HB_SOSMED"] == "45s"
     assert env["HB_REPORT"] == "90s"
     assert env["LACAKIN_PROFILE"] == "demo"
+    assert "JINA_API_KEY" in env
 
 
 def test_prod_env_exports_expected_keys():
