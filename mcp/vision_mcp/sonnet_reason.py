@@ -63,37 +63,39 @@ def reason_about_candidate(
         return {"error": f"unknown source_type {source_type}"}
 
     try:
-        from anthropic import Anthropic
+        from openai import OpenAI
     except ImportError:
-        return {"error": "anthropic SDK not installed"}
+        return {"error": "openai SDK not installed"}
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        return {"error": "ANTHROPIC_API_KEY not set"}
+        return {"error": "OPENROUTER_API_KEY not set"}
 
     img_bytes = Path(image_path).read_bytes()
     img_b64 = base64.b64encode(img_bytes).decode()
     media_type = "image/jpeg" if image_path.lower().endswith((".jpg", ".jpeg")) else "image/png"
 
     try:
-        client = Anthropic(api_key=api_key)
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
+        client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+        resp = client.chat.completions.create(
+            model="anthropic/claude-sonnet-4-6",
             max_tokens=600,
-            system=SYSTEM_PROMPTS[source_type],
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "image", "source": {"type": "base64",
-                        "media_type": media_type, "data": img_b64}},
-                    {"type": "text", "text": (
-                        f"Konteks kasus:\n{context_md}\n\n"
-                        "Analisa gambar di atas. " + _schema_prompt()
-                    )},
-                ],
-            }],
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPTS[source_type]},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {
+                            "url": f"data:{media_type};base64,{img_b64}"}},
+                        {"type": "text", "text": (
+                            f"Konteks kasus:\n{context_md}\n\n"
+                            "Analisa gambar di atas. " + _schema_prompt()
+                        )},
+                    ],
+                },
+            ],
         )
-        text = resp.content[0].text.strip()
+        text = resp.choices[0].message.content.strip()
         if text.startswith("```"):
             text = text.removeprefix("```json").removeprefix("```").rstrip("`").strip()
         data = json.loads(text)

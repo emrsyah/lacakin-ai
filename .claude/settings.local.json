@@ -26,7 +26,14 @@
       "Bash(python -m pytest -v -m \"not needs_api\")",
       "Bash(python -c \"import json5; json5.load\\(open\\('openclaw/agents.json5'\\)\\); print\\('agents.json5 parses OK'\\)\")",
       "Bash(python -c ' *)",
-      "Bash(python scripts/smoke_e2e.py)"
+      "Bash(python scripts/smoke_e2e.py)",
+      "Bash(grep *)",
+      "Bash(openclaw --help)",
+      "Bash(openclaw capability *)",
+      "Bash(openclaw config *)",
+      "Bash(openclaw configure *)",
+      "Bash(chmod +x *)",
+      "Bash(python3 -c \"import json,sys; agents=json.load\\(sys.stdin\\); print\\(f'{len\\(agents\\)} agents:'\\); [print\\(f'  - {a.get\\(\\\\\"id\\\\\",\\\\\"?\\\\\"\\)}'\\) for a in agents]\")"
     ]
   },
   "enableAllProjectMcpServers": true,

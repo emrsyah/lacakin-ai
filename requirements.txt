@@ -3,6 +3,6 @@ playwright>=1.45
 Pillow>=10.0
 requests>=2.32
 pydantic>=2.6
-anthropic>=0.40
+openai>=1.30
 pytest>=8.0
 pytest-asyncio>=0.23

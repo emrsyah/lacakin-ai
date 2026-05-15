@@ -27,7 +27,7 @@ def tmp_lacakin(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def has_anthropic_key():
-    return bool(os.environ.get("ANTHROPIC_API_KEY"))
+def has_openrouter_key():
+    return bool(os.environ.get("OPENROUTER_API_KEY"))
 
 

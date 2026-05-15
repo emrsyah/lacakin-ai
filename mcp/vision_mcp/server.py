@@ -110,24 +110,24 @@ def read_plate(image_path: str) -> dict[str, Any]:
     if not Path(image_path).exists():
         return {"error": f"not found: {image_path}"}
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
-        return {"error": "ANTHROPIC_API_KEY not set"}
+        return {"error": "OPENROUTER_API_KEY not set"}
 
     try:
-        from anthropic import Anthropic
+        from openai import OpenAI
         img_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
         media_type = "image/jpeg" if image_path.lower().endswith((".jpg", ".jpeg")) else "image/png"
 
-        client = Anthropic(api_key=api_key)
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+        resp = client.chat.completions.create(
+            model="anthropic/claude-haiku-4-5-20251001",
             max_tokens=80,
             messages=[{
                 "role": "user",
                 "content": [
-                    {"type": "image", "source": {"type": "base64",
-                        "media_type": media_type, "data": img_b64}},
+                    {"type": "image_url", "image_url": {
+                        "url": f"data:{media_type};base64,{img_b64}"}},
                     {"type": "text", "text": (
                         "Baca plat nomor kendaraan bermotor Indonesia di gambar ini. "
                         "Format plat Indonesia: 1-2 huruf, 1-4 angka, 1-3 huruf. "
@@ -138,7 +138,7 @@ def read_plate(image_path: str) -> dict[str, Any]:
                 ],
             }],
         )
-        raw = resp.content[0].text.strip().upper()
+        raw = resp.choices[0].message.content.strip().upper()
         m = _PLATE_RE.search(raw)
         plate = f"{m.group(1)} {m.group(2)} {m.group(3)}" if m else None
         return {

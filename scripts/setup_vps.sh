@@ -4,9 +4,9 @@ set -euo pipefail
 
 echo "[1/6] System deps"
 sudo apt-get update
-sudo apt-get install -y python3.12 python3.12-venv python3-pip nodejs npm git \
-    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
-    libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libpango-1.0-0 \
+sudo apt-get install -y python3.12 python3.12-venv python3-pip nodejs git \
+    libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libdrm2 libxkbcommon0 \
+    libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2t64 libpango-1.0-0 \
     libcairo2 libxshmfence1
 
 echo "[2/6] Python venv"
@@ -36,7 +36,7 @@ cp mcp/browser_mcp/cameras.json ~/lacakin/workspace-cctv/cameras.json
 echo "[6/6] Env"
 cat <<EOF
 Set these env vars before 'openclaw start':
-  export ANTHROPIC_API_KEY=sk-ant-...
+  export OPENROUTER_API_KEY=sk-or-v1-...
   export TELEGRAM_TOKEN_ORCHESTRATOR=...
   export TELEGRAM_TOKEN_CCTV=...
   export TELEGRAM_TOKEN_MARKETPLACE=...

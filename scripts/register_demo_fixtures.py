@@ -1,6 +1,8 @@
 """Pre-register the staged CCTV image + staged listing image in the vision
 fixture cache so the Sonnet calls are instant + deterministic during demo."""
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mcp.vision_mcp import fixture_cache
 
 ROOT = Path(__file__).resolve().parent.parent / "demo_assets"
