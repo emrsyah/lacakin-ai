@@ -2,11 +2,11 @@
 
 ## At the START of every tick
 
-1. Call `a2a_inbox(to_agent=<your_agent_id>)`. If non-empty:
+1. Call `lacakin-a2a-mcp__a2a_inbox(to_agent=<your_agent_id>)`. If non-empty:
    - These are pivot requests from other agents (or the user via @-mention).
    - Treat them as **the priority for THIS tick**, overriding your default plan.
    - For each message: apply its `reason` and `payload` to scope your sweep.
-   - Call `a2a_consume(message_ids=[...])` once you've integrated them.
+   - Call `lacakin-a2a-mcp__a2a_consume(message_ids=[...])` once you've integrated them.
 
 ## When you decide another agent should pivot
 
@@ -14,13 +14,13 @@ If your Sonnet vision call returns a non-empty `route_to`:
 
 1. For each `{agent, reason}` in `route_to`:
    - Generate (or carry forward) `chain_id`.
-   - Call `a2a_send(case_id=<...>, from_agent=<you>, to_agent=<agent>,
+   - Call `lacakin-a2a-mcp__a2a_send(case_id=<...>, from_agent=<you>, to_agent=<agent>,
      reason=<reason>, payload=<your sweep context>, chain_id=<...>)`.
 2. Also append the visible `@<agent> — <reason>` line to your group post.
 
 ## At the END of every tick (no exceptions)
 
-- Call `a2a_tick_done(to_agent=<your_agent_id>)`.
+- Call `lacakin-a2a-mcp__a2a_tick_done(to_agent=<your_agent_id>)`.
   This decrements TTL of any inbox messages that weren't relevant this tick,
   so they don't re-fire forever.
 

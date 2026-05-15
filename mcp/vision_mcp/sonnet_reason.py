@@ -8,7 +8,10 @@ import os
 from pathlib import Path
 from typing import Any
 
-from mcp.vision_mcp import fixture_cache
+try:
+    from . import fixture_cache
+except ImportError:
+    import fixture_cache
 
 RESPONSE_KEYS = {
     "match_confidence", "matches", "mismatches",

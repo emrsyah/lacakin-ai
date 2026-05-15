@@ -4,5 +4,6 @@ Pillow>=10.0
 requests>=2.32
 pydantic>=2.6
 openai>=1.30
+reportlab>=4.0
 pytest>=8.0
 pytest-asyncio>=0.23

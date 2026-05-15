@@ -23,6 +23,14 @@ echo "[4/6] OpenClaw gateway"
 npm i -g @openclaw/cli || npm i -g openclaw   # whichever package name resolves
 openclaw --version
 
+echo "[4b/6] Agent browser skill"
+npx skills add https://github.com/vercel-labs/agent-browser --skill agent-browser \
+  || echo "Warning: agent-browser skill install failed; continuing without it."
+
+echo "[4c/6] PDF skill (anthropics)"
+npx skills add https://github.com/anthropics/skills --skill pdf \
+  || echo "Warning: pdf skill install failed; report agent will use the built-in fallback renderer."
+
 echo "[5/6] Lacakin shared workspace"
 mkdir -p ~/lacakin/shared/photos ~/lacakin/shared/findings
 mkdir -p ~/lacakin/workspace-{main,cctv,tokopedia,olx,parts,report}
@@ -59,6 +67,28 @@ mkdir -p ~/lacakin/workspace-{main,cctv,marketplace,parts,sosmed,polisi,report}
 for w in cctv marketplace parts sosmed report; do
   cp openclaw/prompts/A2A_PROTOCOL.md ~/lacakin/workspace-$w/A2A_PROTOCOL.md
 done
+
+# Shared Lacakin operational skills.
+for w in main cctv marketplace parts sosmed polisi report; do
+  cp openclaw/prompts/LACAKIN_SKILLS.md ~/lacakin/workspace-$w/LACAKIN_SKILLS.md
+done
+
+# Browser-using agents get the browser skill note.
+for w in cctv marketplace parts sosmed; do
+  cp openclaw/prompts/BROWSER_SKILL.md ~/lacakin/workspace-$w/BROWSER_SKILL.md
+done
+
+# Report agent gets the PDF skill note.
+cp openclaw/prompts/REPORT_PDF_SKILL.md ~/lacakin/workspace-report/REPORT_PDF_SKILL.md
+
+# Agent-specific souls/personas.
+cp openclaw/prompts/souls/orchestrator.md ~/lacakin/workspace-main/SOUL.md
+cp openclaw/prompts/souls/cctv.md         ~/lacakin/workspace-cctv/SOUL.md
+cp openclaw/prompts/souls/marketplace.md  ~/lacakin/workspace-marketplace/SOUL.md
+cp openclaw/prompts/souls/parts.md        ~/lacakin/workspace-parts/SOUL.md
+cp openclaw/prompts/souls/sosmed.md       ~/lacakin/workspace-sosmed/SOUL.md
+cp openclaw/prompts/souls/polisi.md       ~/lacakin/workspace-polisi/SOUL.md
+cp openclaw/prompts/souls/report.md       ~/lacakin/workspace-report/SOUL.md
 
 # Heartbeat prompts: one per worker, renamed to HEARTBEAT.md
 cp openclaw/prompts/heartbeat_cctv.md         ~/lacakin/workspace-cctv/HEARTBEAT.md
