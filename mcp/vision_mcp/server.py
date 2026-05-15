@@ -1,5 +1,5 @@
 """
-vision-mcp: image similarity (Jina CLIP v2 API) + license plate OCR (PaddleOCR).
+vision-mcp: image similarity (Jina CLIP v2 API) + license plate OCR (Claude Haiku vision).
 
 Tools:
   - match_image(reference_path, candidate_path) -> {score: 0..1, reasoning}
@@ -12,7 +12,6 @@ import base64
 import math
 import os
 import re
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -102,33 +101,50 @@ def match_image(reference_path: str, candidate_path: str) -> dict[str, Any]:
 _PLATE_RE = re.compile(r"\b([A-Z]{1,2})\s?([0-9]{1,4})\s?([A-Z]{1,3})\b")
 
 
-@lru_cache(maxsize=1)
-def _ocr():
-    from paddleocr import PaddleOCR
-    return PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
-
-
 @mcp.tool()
 def read_plate(image_path: str) -> dict[str, Any]:
-    """Run OCR and try to extract an Indonesian license plate."""
+    """Extract an Indonesian license plate from an image using Claude Haiku vision.
+
+    Returns {plate: str|null, raw: str, confidence: 0..1}.
+    Costs ~$0.001/call — only call when CLIP score >= 0.60."""
     if not Path(image_path).exists():
         return {"error": f"not found: {image_path}"}
-    try:
-        result = _ocr().ocr(image_path, cls=True)
-        raw_lines: list[str] = []
-        confidences: list[float] = []
-        for page in result or []:
-            for _bbox, (txt, conf) in (page or []):
-                raw_lines.append(txt)
-                confidences.append(float(conf))
 
-        joined = " ".join(raw_lines).upper()
-        m = _PLATE_RE.search(joined)
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return {"error": "ANTHROPIC_API_KEY not set"}
+
+    try:
+        from anthropic import Anthropic
+        img_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
+        media_type = "image/jpeg" if image_path.lower().endswith((".jpg", ".jpeg")) else "image/png"
+
+        client = Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=80,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64",
+                        "media_type": media_type, "data": img_b64}},
+                    {"type": "text", "text": (
+                        "Baca plat nomor kendaraan bermotor Indonesia di gambar ini. "
+                        "Format plat Indonesia: 1-2 huruf, 1-4 angka, 1-3 huruf. "
+                        "Contoh: 'D 1234 ABC'. "
+                        "Jika ada plat, balas HANYA teks plat saja tanpa penjelasan. "
+                        "Jika tidak terlihat / dikaburkan, balas: TIDAK_TERLIHAT"
+                    )},
+                ],
+            }],
+        )
+        raw = resp.content[0].text.strip().upper()
+        m = _PLATE_RE.search(raw)
         plate = f"{m.group(1)} {m.group(2)} {m.group(3)}" if m else None
         return {
             "plate": plate,
-            "raw": raw_lines,
-            "confidence": round(sum(confidences) / len(confidences), 3) if confidences else 0.0,
+            "raw": raw,
+            "confidence": 0.85 if plate else 0.0,
         }
     except Exception as e:
         return {"error": str(e)}
