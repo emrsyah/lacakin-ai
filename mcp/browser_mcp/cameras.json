@@ -1,0 +1,12 @@
+[
+  {"id": "dago-atas",       "area": "Dago Atas",       "lat": -6.8625, "lon": 107.6190, "url": "https://pelindung.bandung.go.id/cctv/dago-atas"},
+  {"id": "dago-simpang",    "area": "Simpang Dago",    "lat": -6.8898, "lon": 107.6132, "url": "http://localhost:8765/cctv_clips/dago-simpang.html"},
+  {"id": "pasteur",         "area": "Pasteur",         "lat": -6.8925, "lon": 107.5950, "url": "https://pelindung.bandung.go.id/cctv/pasteur"},
+  {"id": "cihampelas",      "area": "Cihampelas",      "lat": -6.8990, "lon": 107.6030, "url": "https://pelindung.bandung.go.id/cctv/cihampelas"},
+  {"id": "asia-afrika",     "area": "Asia Afrika",     "lat": -6.9215, "lon": 107.6090, "url": "https://pelindung.bandung.go.id/cctv/asia-afrika"},
+  {"id": "buah-batu",       "area": "Buah Batu",       "lat": -6.9550, "lon": 107.6360, "url": "https://pelindung.bandung.go.id/cctv/buah-batu"},
+  {"id": "kiaracondong",    "area": "Kiaracondong",    "lat": -6.9305, "lon": 107.6480, "url": "https://pelindung.bandung.go.id/cctv/kiaracondong"},
+  {"id": "soekarno-hatta-1","area": "Soekarno Hatta",  "lat": -6.9410, "lon": 107.6200, "url": "https://pelindung.bandung.go.id/cctv/soekarno-hatta-1"},
+  {"id": "antapani",        "area": "Antapani",        "lat": -6.9170, "lon": 107.6580, "url": "https://pelindung.bandung.go.id/cctv/antapani"},
+  {"id": "ujung-berung",    "area": "Ujung Berung",    "lat": -6.9100, "lon": 107.7060, "url": "https://pelindung.bandung.go.id/cctv/ujung-berung"}
+]
