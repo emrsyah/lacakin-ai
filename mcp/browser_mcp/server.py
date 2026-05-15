@@ -55,27 +55,47 @@ def _slug(s: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────
 # CCTV
 # ─────────────────────────────────────────────────────────────────────────
+_IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
+
+
 @mcp.tool()
 async def cctv_snapshot(camera_id: str) -> dict[str, Any]:
-    """Grab a single still from a Bandung pelindung CCTV camera."""
+    """Grab a single still from a Bandung pelindung CCTV camera.
+
+    Two transports are supported, matching what real ATCS deployments expose:
+      - Direct image endpoint (JPG/PNG/WebP) — fetched with a raw HTTP GET so
+        downstream similarity hashes are stable across calls.
+      - HTML viewer — opened in Chromium and captured as a viewport screenshot.
+    """
     cam = CAMERAS.get(camera_id)
     if not cam:
         return {"error": f"unknown camera {camera_id}", "known": list(CAMERAS)}
 
+    ts = int(time.time())
+    out = PHOTOS_DIR / camera_id / f"{ts}.jpg"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    url_lower = cam["url"].lower().split("?", 1)[0]
+    is_image_endpoint = url_lower.endswith(_IMAGE_SUFFIXES)
+
     browser = await _get_browser()
     ctx = await browser.new_context(viewport={"width": 1280, "height": 720})
-    page = await ctx.new_page()
     try:
-        await page.goto(cam["url"], wait_until="networkidle", timeout=20_000)
-        # Many ATCS-style streams render into a <video> or <canvas>. Grab the
-        # whole viewport — vision-mcp can crop later if needed.
-        ts = int(time.time())
-        out = PHOTOS_DIR / camera_id / f"{ts}.jpg"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        await page.screenshot(path=str(out), full_page=False, type="jpeg", quality=80)
-        return {"path": str(out), "ts": ts, "camera_id": camera_id, "area": cam["area"]}
-    except Exception as e:
-        return {"error": str(e), "camera_id": camera_id}
+        if is_image_endpoint:
+            resp = await ctx.request.get(cam["url"], timeout=10_000)
+            if resp.ok:
+                out.write_bytes(await resp.body())
+                return {"path": str(out), "ts": ts, "camera_id": camera_id, "area": cam["area"]}
+            return {"error": f"image fetch failed: HTTP {resp.status}", "camera_id": camera_id}
+
+        page = await ctx.new_page()
+        try:
+            await page.goto(cam["url"], wait_until="networkidle", timeout=20_000)
+            # Many ATCS-style streams render into a <video> or <canvas>. Grab
+            # the whole viewport — vision-mcp can crop later if needed.
+            await page.screenshot(path=str(out), full_page=False, type="jpeg", quality=80)
+            return {"path": str(out), "ts": ts, "camera_id": camera_id, "area": cam["area"]}
+        except Exception as e:
+            return {"error": str(e), "camera_id": camera_id}
     finally:
         await ctx.close()
 

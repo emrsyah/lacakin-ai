@@ -1,0 +1,22 @@
+[Unit]
+Description=Lacakin Gateway (OpenClaw + demo asset server)
+Documentation=https://github.com/anthropics/lacakin-ai
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/lacakin-ai
+ExecStart=/bin/bash %h/lacakin-ai/scripts/start_demo.sh
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=15
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lacakin
+
+[Install]
+WantedBy=default.target

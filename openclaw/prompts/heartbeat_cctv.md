@@ -22,9 +22,15 @@ Pendek, observasional, seperti pengintai radio:
    (skip field yang kosong). Ini yang akan diadu ke screenshot via Jina.
 3. Re-read `./findings.md` untuk hindari double-check kamera yang sama
    dalam 5 menit terakhir.
-4. Dari `./cameras.json`, pilih **3 kamera** dalam 5km dari last-seen
-   (atau area yang dipivot dari A2A) yang belum dicek baru-baru ini.
-   Semua entri valid mengarah ke `https://pelindung.bandung.go.id/cctv/<id>`.
+4. Pilih kamera untuk tick ini:
+   - Jika `CONTEXT.md` memiliki section `## Leads` yang berisi baris
+     `camera_id: <id>`, prioritaskan kamera tersebut. Lead adalah tip
+     manual dari operator (atau pivot dari agen lain) dan menggantikan
+     pemilihan berbasis radius untuk tick ini.
+   - Jika tidak ada lead yang relevan, dari `./cameras.json` pilih
+     **maks 3 kamera** dalam 5km dari last-seen (atau area pivot A2A)
+     yang belum dicek baru-baru ini.
+   - Total kamera diperiksa per tick tetap dibatasi 3.
 5. Untuk tiap kamera:
    a. **Screenshot.** Default: `lacakin-browser-mcp__cctv_snapshot(camera_id)` → `image_path`.
       Jika MCP gagal/timeout, fallback pakai agent-browser skill:

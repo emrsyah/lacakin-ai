@@ -107,7 +107,7 @@ echo "[3/4] Adding 7 agents..."
 I=$N
 openclaw config set "agents.list[$I].id"            "orchestrator"
 openclaw config set "agents.list[$I].workspace"     "$HOME/lacakin/workspace-main"
-openclaw config set "agents.list[$I].model.primary" "openrouter/free"
+openclaw config set "agents.list[$I].model.primary" "openai/gemini-2.5-flash"
 
 # CCTV
 I=$((N+1))
@@ -146,7 +146,7 @@ openclaw config set "agents.list[$I].workspace" "$HOME/lacakin/workspace-polisi"
 I=$((N+6))
 openclaw config set "agents.list[$I].id"               "report"
 openclaw config set "agents.list[$I].workspace"        "$HOME/lacakin/workspace-report"
-openclaw config set "agents.list[$I].model.primary"    "openrouter/free"
+openclaw config set "agents.list[$I].model.primary"    "openai/gemini-2.5-flash"
 openclaw config set "agents.list[$I].heartbeat.every"  "$HB_REPORT"
 openclaw config set "agents.list[$I].heartbeat.prompt" "Generate periodic synthesis report. Read ./SYSTEM.md untuk instruksi lengkap."
 
@@ -165,27 +165,27 @@ openclaw config set "bindings" --json '[
 openclaw config set "broadcast.$LACAKIN_GROUP_ID" --json \
   '["cctv","marketplace","parts","sosmed","polisi","report"]'
 
-if [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
-  echo "Writing per-agent OpenRouter auth profiles..."
+if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+  echo "Writing per-agent model auth profiles..."
   python3 <<'PY'
 import json
 import os
 from pathlib import Path
 
-key = os.environ.get("OPENROUTER_API_KEY", "")
+key = os.environ.get("OPENAI_API_KEY", "")
 if not key:
     raise SystemExit(0)
 
-payload = {
-    "version": 1,
-    "profiles": {
-        "openrouter:default": {
-            "type": "api_key",
-            "provider": "openrouter",
-            "key": key,
-        }
-    },
+profile = {
+    "provider": "openai",
+    "mode": "api_key",
+    "apiKey": key,
 }
+base_url = os.environ.get("OPENAI_BASE_URL")
+if base_url:
+    profile["baseUrl"] = base_url
+
+payload = {"version": 1, "profiles": {"openai:default": profile}}
 
 for agent_id in ["orchestrator", "cctv", "marketplace", "parts", "sosmed", "polisi", "report"]:
     agent_dir = Path.home() / ".openclaw" / "agents" / agent_id / "agent"
@@ -195,7 +195,7 @@ for agent_id in ["orchestrator", "cctv", "marketplace", "parts", "sosmed", "poli
     auth_path.chmod(0o600)
 PY
 else
-  echo "Warning: OPENROUTER_API_KEY is not set; per-agent model auth was not written."
+  echo "Warning: OPENAI_API_KEY is not set; per-agent model auth was not written."
 fi
 
 echo ""

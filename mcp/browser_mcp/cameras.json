@@ -1,6 +1,6 @@
 [
   {"id": "dago-atas",       "area": "Dago Atas",       "lat": -6.8625, "lon": 107.6190, "url": "https://pelindung.bandung.go.id/cctv/dago-atas"},
-  {"id": "dago-simpang",    "area": "Simpang Dago",    "lat": -6.8898, "lon": 107.6132, "url": "http://localhost:8765/cctv_clips/dago-simpang.html"},
+  {"id": "dago-simpang",    "area": "Simpang Dago",    "lat": -6.8898, "lon": 107.6132, "url": "http://localhost:8765/cctv_clips/staged-motor-frame.jpg"},
   {"id": "pasteur",         "area": "Pasteur",         "lat": -6.8925, "lon": 107.5950, "url": "https://pelindung.bandung.go.id/cctv/pasteur"},
   {"id": "cihampelas",      "area": "Cihampelas",      "lat": -6.8990, "lon": 107.6030, "url": "https://pelindung.bandung.go.id/cctv/cihampelas"},
   {"id": "asia-afrika",     "area": "Asia Afrika",     "lat": -6.9215, "lon": 107.6090, "url": "https://pelindung.bandung.go.id/cctv/asia-afrika"},

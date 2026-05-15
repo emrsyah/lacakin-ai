@@ -87,8 +87,8 @@ forums, and drafts an official police report — all from a single user message.
 │                                                              │
 │  browser-mcp   Playwright Chromium: CCTV snapshots + FB scan │
 │  vision-mcp    Jina CLIP v2 (image↔image, text↔image)        │
-│                + Claude Haiku plate OCR                      │
-│                + Claude Sonnet structured reasoning          │
+│                + Gemini Flash Lite plate OCR                 │
+│                + Gemini Flash structured reasoning           │
 │  db-mcp        SQLite findings + case-context store          │
 │  a2a-mcp       Agent inbox (SQLite + TTL + cycle check)      │
 │  polisi-mcp    Police report template renderer               │
@@ -120,13 +120,13 @@ under `~/lacakin/workspace-<id>/`.
 
 | Agent | Telegram persona | Model | Heartbeat | Tools allowed | MCP allowlist | Role |
 |---|---|---|---|---|---|---|
-| `orchestrator` | Lacakin 🛵 (calm investigator) | claude-opus-4-7 | none (event-driven) | read, write, edit, sessions_* | db, a2a, ops | Intake, case context, fan-out to workers |
-| `cctv` | Mata Bandung 👁️ (lookout) | claude-haiku-4-5 | 30s demo / 5m prod | read, write, browser | browser, vision, db, a2a, ops | Snapshot pelindung CCTV, score vs case text |
-| `marketplace` | Pemantau Pasar 🛒 (market trader) | claude-haiku-4-5 | 45s / 10m | read, write, browser | browser, vision, db, a2a, ops | Watch Facebook Marketplace Bandung listings |
-| `parts` | Pemburu Suku Cadang 🔧 (parts specialist) | claude-haiku-4-5 | 60s / 15m | read, write, browser | browser, vision, db, a2a, ops | Hunt part-outs and stripped-unit listings |
-| `sosmed` | Pengintai Sosmed 📱 (social stalker) | claude-haiku-4-5 | 45s / 10m | read, write, browser | browser, vision, db, a2a, ops | Facebook top-search public posts (no login) |
-| `polisi` | Polisi-AI 👮 (birokrat) | claude-haiku-4-5 | none (on demand) | read, write | db, polisi, ops | Draft formal police reports |
-| `report` | Pencatat Laporan 📋 (neutral chronicler) | claude-opus-4-7 | 90s / 30m | read, write | db, a2a, ops | Cluster findings, render PDF, send to group |
+| `orchestrator` | Lacakin 🛵 (calm investigator) | gemini-2.5-flash | none (event-driven) | read, write, edit, sessions_* | db, a2a, ops | Intake, case context, fan-out to workers |
+| `cctv` | Mata Bandung 👁️ (lookout) | gemini-2.5-flash-lite | 30s demo / 5m prod | read, write, browser | browser, vision, db, a2a, ops | Snapshot pelindung CCTV, score vs case text |
+| `marketplace` | Pemantau Pasar 🛒 (market trader) | gemini-2.5-flash-lite | 45s / 10m | read, write, browser | browser, vision, db, a2a, ops | Watch Facebook Marketplace Bandung listings |
+| `parts` | Pemburu Suku Cadang 🔧 (parts specialist) | gemini-2.5-flash-lite | 60s / 15m | read, write, browser | browser, vision, db, a2a, ops | Hunt part-outs and stripped-unit listings |
+| `sosmed` | Pengintai Sosmed 📱 (social stalker) | gemini-2.5-flash-lite | 45s / 10m | read, write, browser | browser, vision, db, a2a, ops | Facebook top-search public posts (no login) |
+| `polisi` | Polisi-AI 👮 (birokrat) | gemini-2.5-flash-lite | none (on demand) | read, write | db, polisi, ops | Draft formal police reports |
+| `report` | Pencatat Laporan 📋 (neutral chronicler) | gemini-2.5-flash | 90s / 30m | read, write | db, a2a, ops | Cluster findings, render PDF, send to group |
 
 Each worker's behaviour is split into two files copied into its workspace by
 `scripts/setup_vps.sh`:
@@ -203,7 +203,7 @@ reasoner. Agents pick the right Stage-1 based on what they have:
                    │                                             │
                    └──────────────────┬──────────────────────────┘
                                       ▼
-                          Stage 2 (Claude Sonnet 4.6)
+                          Stage 2 (Gemini 2.5 Flash)
                           ───────────────────────────
                           reason_about_candidate(image, context_md, source_type)
 
@@ -214,7 +214,7 @@ reasoner. Agents pick the right Stage-1 based on what they have:
                               suspicious_signals[]
                               narrative         (1-3 sentences)
                               route_to[]        (next agent + reason)
-                          + (optional) read_plate via Claude Haiku vision
+                          + (optional) read_plate via Gemini Flash Lite vision
 ```
 
 Text↔image cosines sit at a much lower absolute range than image↔image — 0.25
@@ -292,9 +292,9 @@ surface:
   cosine, 0..1.
 - `match_text_image(text, image_path)` — Jina CLIP v2 text↔image cosine; used
   by CCTV (case description) and sosmed (FB query).
-- `read_plate(image_path)` — Indonesian plate OCR via Claude Haiku vision.
+- `read_plate(image_path)` — Indonesian plate OCR via the configured vision model (default `gemini-2.5-flash-lite`).
 - `reason_about_candidate(image_path, context_md, source_type)` — Stage-2
-  structured JSON via Claude Sonnet, with the fixture cache layer.
+  structured JSON via the configured vision model (default `gemini-2.5-flash`), with the fixture cache layer.
 
 ### `db-mcp` — `mcp/db_mcp/server.py`
 - `write_context(case_id, context_md)` / `get_context(case_id)` /
@@ -409,7 +409,7 @@ lacakin-ai/
 │   │   └── cameras.json         # 10 Bandung cameras (pelindung.bandung.go.id)
 │   ├── vision_mcp/              # Jina CLIP + Claude vision
 │   │   ├── server.py            # match_image, match_text_image, read_plate, reason_about_candidate
-│   │   ├── sonnet_reason.py     # Stage-2 Claude Sonnet vision reasoning
+│   │   ├── sonnet_reason.py     # Stage-2 structured vision reasoning
 │   │   ├── fixture_cache.py     # SHA-256-keyed demo fixture store
 │   │   └── fixtures/            # Pre-cached Sonnet responses for staged frames
 │   ├── db_mcp/                  # Findings + case context (SQLite)
@@ -443,7 +443,7 @@ lacakin-ai/
 - Node.js 18+ (for OpenClaw gateway and `npx skills`)
 - A Linux VPS (tested on Ubuntu 22.04+)
 - 7 Telegram bots created via [@BotFather](https://t.me/BotFather)
-- API keys: `OPENROUTER_API_KEY` (or `ANTHROPIC_API_KEY`), `JINA_API_KEY`
+- API keys: `OPENAI_API_KEY` (any OpenAI-compatible provider works — set `OPENAI_BASE_URL` to e.g. `https://ai.sumopod.com/v1`), `JINA_API_KEY`
 
 ### 1. Clone and install
 
@@ -471,7 +471,7 @@ it isn't @-mentioned in).
 
 ```bash
 cp .env.demo .env
-$EDITOR .env   # fill in OPENROUTER_API_KEY, JINA_API_KEY, all 7 TELEGRAM_TOKEN_*,
+$EDITOR .env   # fill in OPENAI_API_KEY (+ OPENAI_BASE_URL), JINA_API_KEY, all 7 TELEGRAM_TOKEN_*,
                # LACAKIN_GROUP_ID, LACAKIN_SHARED, LACAKIN_DB
 ```
 
@@ -519,7 +519,7 @@ agent's next tick produces a PDF.
 
 ```bash
 pytest -v -m "not needs_api"   # default suite, no API keys needed
-pytest -v                      # full suite, needs OPENROUTER_API_KEY + JINA_API_KEY
+pytest -v                      # full suite, needs OPENAI_API_KEY + JINA_API_KEY
 ```
 
 The `not needs_api` marker covers the A2A protocol, db schema, fixture cache

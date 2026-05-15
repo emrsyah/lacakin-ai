@@ -24,6 +24,18 @@ If your Sonnet vision call returns a non-empty `route_to`:
   This decrements TTL of any inbox messages that weren't relevant this tick,
   so they don't re-fire forever.
 
+## CRITICAL: How to post to Telegram group
+
+**NEVER use the built-in `message` tool to reply** — your text output at the end
+of a turn is automatically sent back through Telegram by OpenClaw.
+
+To **proactively post** to the group (e.g. findings, status updates), use:
+`lacakin-ops-mcp__post_heartbeat_status(agent_id=<your_id>, status=<text>, case_id=<id>, visible=true)`
+
+Or for photos: `lacakin-ops-mcp__send_telegram_photo(agent_id=<your_id>, ...)`
+
+Do NOT call `message(action="send", ...)` — it will fail.
+
 ## Hard rules
 
 - Never `a2a_send` to yourself.

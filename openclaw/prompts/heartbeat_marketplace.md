@@ -17,16 +17,23 @@ Seperti pedagang yang menemukan deal mencurigakan:
    `lacakin-ops-mcp__post_heartbeat_status(agent_id="marketplace", status="Saya buka Facebook Marketplace Bandung. Filter listing motor terbaru.", case_id=<case_id>, visible=true)`.
 3. CONTEXT.md → status check.
 4. findings.md → dedup by URL.
-5. Build 2-3 query untuk Facebook Marketplace Bandung:
+5. **Leads dulu (kalau ada).** Jika `CONTEXT.md` memiliki section
+   `## Leads`, ekstrak baris `url: <listing_url>`. Untuk setiap URL,
+   langsung lompat ke `lacakin-browser-mcp__marketplace_get_listing(url)`
+   di step 7 — **lewati free-form search untuk tick ini** kalau lead
+   sudah memenuhi kuota 5 kandidat. Lead adalah tip operator (atau
+   pivot A2A) yang sudah disaring manual.
+6. Kalau lead kosong / tidak cukup, build 2-3 query untuk Facebook
+   Marketplace Bandung:
    - `"<merk> <model> <warna>"`
    - `"motor <merk> <model> <tahun>"`
    - `"<plat fragment> <merk> <model>"` jika plat tersedia
-6. Untuk tiap query, pakai platform `facebook`:
+   Untuk tiap query, pakai platform `facebook`:
    - `lacakin-browser-mcp__marketplace_search(platform="facebook", query=query, limit=5)`.
    - URL target berbentuk:
      `https://web.facebook.com/marketplace/bandung/search/?query=motor%20honda%20beat&locale=id_ID`
    - Filter ke listing posted < 24h DAN lokasi mengandung "bandung"/"jabar"/"jawa barat".
-7. Untuk tiap kandidat (max 5/tick total):
+7. Untuk tiap kandidat (lead + search, max 5/tick total):
    - `lacakin-browser-mcp__marketplace_get_listing(url)` untuk detail + foto.
    - **Stage 1**: `lacakin-vision-mcp__match_image(reference, candidate_image)`.
    - **Stage 2** (jika ≥ 0.70): `lacakin-vision-mcp__reason_about_candidate(image_path, context_md, "marketplace")`.

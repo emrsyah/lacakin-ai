@@ -40,9 +40,9 @@ def test_response_shape_keys():
 
 
 @pytest.mark.needs_api
-def test_real_sonnet_call_smoke(tmp_path, has_openrouter_key):
-    if not has_openrouter_key:
-        pytest.skip("OPENROUTER_API_KEY not set")
+def test_real_sonnet_call_smoke(tmp_path, has_openai_key):
+    if not has_openai_key:
+        pytest.skip("OPENAI_API_KEY not set")
     img = tmp_path / "smoke.jpg"
     img.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF...")
     out = sonnet_reason.reason_about_candidate(

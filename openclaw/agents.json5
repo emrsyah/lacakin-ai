@@ -52,7 +52,7 @@
     defaults: {
       sandbox: { mode: "non-main", scope: "session" },
       heartbeat: { every: "0m" },
-      model: "openrouter/anthropic/claude-haiku-4-5-20251001",
+      model: "openai/gpt-4o-mini",
     },
 
     list: [
@@ -60,7 +60,7 @@
         id: "orchestrator",
         name: "Lacakin",
         workspace: "~/lacakin/workspace-main",
-        model: "openrouter/anthropic/claude-opus-4-7",
+        model: "openai/gpt-4o",
         thinkingDefault: "high",
         sandbox: { mode: "off" },
         identity: { name: "Lacakin", emoji: "🛵", theme: "calm investigator" },
@@ -148,7 +148,7 @@
         workspace: "~/lacakin/workspace-report",
         identity: { name: "Pencatat Laporan", emoji: "📋", theme: "neutral chronicler" },
         groupChat: { mentionPatterns: ["@laporan_bot","@laporan"] },
-        model: "openrouter/anthropic/claude-opus-4-7",
+        model: "openai/gpt-4o",
         sandbox: { mode: "off" },
         tools: { allow: ["read","write"] },
         mcp: ["db-mcp","a2a-mcp","ops-mcp"],

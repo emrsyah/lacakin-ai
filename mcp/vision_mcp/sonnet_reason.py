@@ -1,5 +1,5 @@
-"""Stage-2 vision reasoning: send candidate image + case context to Claude
-Sonnet, return structured JSON the worker posts into the group."""
+"""Stage-2 vision reasoning: send candidate image + case context to the
+configured vision model, return structured JSON the worker posts into the group."""
 from __future__ import annotations
 
 import base64
@@ -70,18 +70,19 @@ def reason_about_candidate(
     except ImportError:
         return {"error": "openai SDK not installed"}
 
-    api_key = os.environ.get("OPENROUTER_API_KEY")
+    api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        return {"error": "OPENROUTER_API_KEY not set"}
+        return {"error": "OPENAI_API_KEY not set"}
 
     img_bytes = Path(image_path).read_bytes()
     img_b64 = base64.b64encode(img_bytes).decode()
     media_type = "image/jpeg" if image_path.lower().endswith((".jpg", ".jpeg")) else "image/png"
 
     try:
-        client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+        base_url = os.environ.get("OPENAI_BASE_URL") or None
+        client = OpenAI(api_key=api_key, base_url=base_url)
         resp = client.chat.completions.create(
-            model="anthropic/claude-sonnet-4-6",
+            model=os.environ.get("LACAKIN_VISION_REASON_MODEL", "gemini-2.5-flash"),
             max_tokens=600,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPTS[source_type]},

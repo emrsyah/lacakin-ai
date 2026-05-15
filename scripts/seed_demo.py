@@ -25,6 +25,9 @@ SHARED.mkdir(parents=True, exist_ok=True)
 
 now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
+ASSET_PORT = os.environ.get("LACAKIN_ASSET_PORT", "8765")
+LISTING_LEAD = f"http://localhost:{ASSET_PORT}/fake_listings/facebook-bandung-honda-beat.html"
+
 (SHARED / "CONTEXT.md").write_text(f"""# Case demo-001
 - Status: ACTIVE
 - Reported: {now}
@@ -38,6 +41,10 @@ now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 - Photo: ./shared/photos/reference.jpg
 - Search radius: 5km from last seen
 - Updated: {now}
+
+## Leads
+- camera_id: dago-simpang
+- url: {LISTING_LEAD}
 """)
 
 # Copy real reference photo from demo_assets if available, else placeholder.
