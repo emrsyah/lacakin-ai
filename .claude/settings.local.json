@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__context7__resolve-library-id",
+      "WebSearch",
+      "mcp__context7__query-docs",
+      "Skill(brainstorming)",
+      "Skill(writing-plans)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Skill(executing-plans)",
+      "Bash(pip install *)",
+      "Bash(python -m pytest -v)",
+      "Bash(python -m pytest tests/test_env_interpolation.py -v)",
+      "Bash(python -m pytest tests/test_fixture_cache.py -v)",
+      "Bash(New-Item -ItemType File -Path \"mcp/vision_mcp/fixtures/.gitkeep\" -Force)",
+      "Bash(Out-Null)",
+      "Bash(python -m pytest tests/test_sonnet_reason_contract.py -v -m \"not needs_api\")",
+      "Bash(python -m pytest tests/test_a2a_protocol.py -v)",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '..'\\); from mcp.server.fastmcp import FastMCP; print\\('ok'\\)\")",
+      "Bash(python -c \"import importlib; import pkgutil; pkg = importlib.import_module\\('mcp'\\); print\\(pkg.__file__\\); print\\([m.name for m in pkgutil.iter_modules\\(pkg.__path__\\)]\\)\")",
+      "Bash(python -c \"import site; print\\(site.getsitepackages\\(\\)\\)\")",
+      "Bash(python -c \"import sys; sys.path = [p for p in sys.path if 'lacakin' not in p]; from mcp.server.fastmcp import FastMCP; print\\('fastmcp ok:', FastMCP\\)\")",
+      "Bash(pip show *)",
+      "Bash(pip list *)",
+      "Bash(python -m pytest -v -m \"not needs_api\")",
+      "Bash(python -c \"import json5; json5.load\\(open\\('openclaw/agents.json5'\\)\\); print\\('agents.json5 parses OK'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python scripts/smoke_e2e.py)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "neon"
+  ]
+}

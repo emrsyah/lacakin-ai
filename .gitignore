@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+shared/photos/
+shared/findings/
+node_modules/
+.openclaw/
