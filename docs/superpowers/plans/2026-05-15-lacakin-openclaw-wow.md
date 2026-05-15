@@ -978,19 +978,25 @@ This is the biggest single config change. Replace the existing `agents.json5` wh
 
 ```json5
 // OpenClaw gateway config for Lacakin — wow-factor edition.
-// Heartbeats are env-interpolated (see .env.demo / .env.prod).
+//
+// Field-name notes (verified against OpenClaw docs 2026-05-15):
+//   - Telegram token field is `botToken`, NOT `token`.
+//   - `promptFile` is NOT a real field. Agents read their system + heartbeat
+//     prompts from their own `workspace` via the `read` tool. setup_vps.sh
+//     distributes the .md files into each workspace before gateway boot.
+//   - `mcp.servers.<name>: {command, args, env?}` is documented verbatim.
 {
   channels: {
     telegram: {
       enabled: true,
       accounts: {
-        orchestrator: { token: "${TELEGRAM_TOKEN_ORCHESTRATOR}" },
-        cctv:         { token: "${TELEGRAM_TOKEN_CCTV}" },
-        marketplace:  { token: "${TELEGRAM_TOKEN_MARKETPLACE}" },
-        parts:        { token: "${TELEGRAM_TOKEN_PARTS}" },
-        sosmed:       { token: "${TELEGRAM_TOKEN_SOSMED}" },
-        polisi:       { token: "${TELEGRAM_TOKEN_POLISI}" },
-        report:       { token: "${TELEGRAM_TOKEN_REPORT}" },
+        orchestrator: { botToken: "${TELEGRAM_TOKEN_ORCHESTRATOR}" },
+        cctv:         { botToken: "${TELEGRAM_TOKEN_CCTV}" },
+        marketplace:  { botToken: "${TELEGRAM_TOKEN_MARKETPLACE}" },
+        parts:        { botToken: "${TELEGRAM_TOKEN_PARTS}" },
+        sosmed:       { botToken: "${TELEGRAM_TOKEN_SOSMED}" },
+        polisi:       { botToken: "${TELEGRAM_TOKEN_POLISI}" },
+        report:       { botToken: "${TELEGRAM_TOKEN_REPORT}" },
       },
     },
   },
@@ -1010,7 +1016,7 @@ This is the biggest single config change. Replace the existing `agents.json5` wh
       "cctv-bandung", "marketplace", "parts",
       "sosmed", "polisi", "report",
       // orchestrator deliberately NOT in broadcast — it posts via its own bot
-      // by direct invocation only (controlled by main_system.md).
+      // by direct invocation only (controlled by SYSTEM.md in its workspace).
     ],
   },
 
@@ -1032,6 +1038,7 @@ This is the biggest single config change. Replace the existing `agents.json5` wh
       {
         id: "orchestrator",
         name: "Lacakin",
+        workspace: "~/lacakin/workspace-main",
         model: "anthropic/claude-opus-4-7",
         thinkingDefault: "high",
         sandbox: { mode: "off" },
@@ -1043,11 +1050,15 @@ This is the biggest single config change. Replace the existing `agents.json5` wh
         },
         subagents: { allowAgents: ["cctv-bandung","marketplace","parts","sosmed","polisi","report"] },
         mcp: ["db-mcp","a2a-mcp"],
-        promptFile: "./prompts/main_system.md",
+        // System prompt: tell the agent to load its real instructions from
+        // SYSTEM.md (distributed by setup_vps.sh). One short directive keeps
+        // the .json5 readable; prompt iteration happens in .md files.
+        prompt: "Anda Lacakin. Sebelum merespons, baca file ./SYSTEM.md di workspace Anda untuk instruksi lengkap.",
       },
 
       {
         id: "cctv-bandung",
+        workspace: "~/lacakin/workspace-cctv",
         identity: { name: "Mata Bandung", emoji: "👁️", theme: "lookout" },
         groupChat: { mentionPatterns: ["@mata_bandung_bot","@mata"] },
         sandbox: { mode: "all", scope: "agent" },
@@ -1058,69 +1069,75 @@ This is the biggest single config change. Replace the existing `agents.json5` wh
           lightContext: true,
           isolatedSession: false,
           skipWhenBusy: true,
-          prompt: "Run CCTV tick. Read A2A_PROTOCOL.md, ./shared/CONTEXT.md, ./HEARTBEAT.md.",
+          // Pattern from OpenClaw docs example: short directive, files in workspace.
+          prompt: "Run CCTV tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md for full instructions.",
           timeoutSeconds: 90,
         },
       },
 
       {
         id: "marketplace",
+        workspace: "~/lacakin/workspace-marketplace",
         identity: { name: "Pemantau Pasar", emoji: "🛒", theme: "market trader" },
         groupChat: { mentionPatterns: ["@pasar_bot","@pasar"] },
         sandbox: { mode: "all", scope: "agent" },
         tools: { allow: ["read","write","browser"] },
         mcp: ["browser-mcp","vision-mcp","db-mcp","a2a-mcp"],
         heartbeat: { every: "${HB_MARKETPLACE}", lightContext: true,
-          prompt: "Marketplace tick. Read A2A_PROTOCOL.md, CONTEXT.md, HEARTBEAT.md.",
+          prompt: "Marketplace tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md.",
           timeoutSeconds: 90, skipWhenBusy: true },
       },
 
       {
         id: "parts",
+        workspace: "~/lacakin/workspace-parts",
         identity: { name: "Pemburu Suku Cadang", emoji: "🔧", theme: "parts specialist" },
         groupChat: { mentionPatterns: ["@cadang_bot","@cadang"] },
         sandbox: { mode: "all", scope: "agent" },
         tools: { allow: ["read","write","browser"] },
         mcp: ["browser-mcp","vision-mcp","db-mcp","a2a-mcp"],
         heartbeat: { every: "${HB_PARTS}", lightContext: true,
-          prompt: "Parts tick. Read A2A_PROTOCOL.md, CONTEXT.md, HEARTBEAT.md.",
+          prompt: "Parts tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md.",
           timeoutSeconds: 120, skipWhenBusy: true },
       },
 
       {
         id: "sosmed",
+        workspace: "~/lacakin/workspace-sosmed",
         identity: { name: "Pengintai Sosmed", emoji: "📱", theme: "social media stalker" },
         groupChat: { mentionPatterns: ["@sosmed_bot","@sosmed"] },
         sandbox: { mode: "all", scope: "agent" },
         tools: { allow: ["read","write","browser"] },
         mcp: ["browser-mcp","vision-mcp","db-mcp","a2a-mcp"],
         heartbeat: { every: "${HB_SOSMED}", lightContext: true,
-          prompt: "Social media tick. Read A2A_PROTOCOL.md, CONTEXT.md, HEARTBEAT.md.",
+          prompt: "Social media tick. Read ./A2A_PROTOCOL.md and ./HEARTBEAT.md.",
           timeoutSeconds: 90, skipWhenBusy: true },
       },
 
       {
         id: "polisi",
+        workspace: "~/lacakin/workspace-polisi",
         identity: { name: "Polisi-AI", emoji: "👮", theme: "birokrat" },
         groupChat: { mentionPatterns: ["@polisi_ai_bot","@polisi"] },
         sandbox: { mode: "off" },
         tools: { allow: ["read","write"] },
         mcp: ["db-mcp","polisi-mcp"],
-        promptFile: "./prompts/polisi_system.md",
+        prompt: "Anda Polisi-AI. Sebelum merespons, baca ./SYSTEM.md untuk instruksi lengkap.",
         // No heartbeat — invoked on-demand by orchestrator or @mention.
       },
 
       {
         id: "report",
+        workspace: "~/lacakin/workspace-report",
         identity: { name: "Pencatat Laporan", emoji: "📋", theme: "neutral chronicler" },
         groupChat: { mentionPatterns: ["@laporan_bot","@laporan"] },
         model: "anthropic/claude-opus-4-7",   // smart synthesis worth opus
         sandbox: { mode: "off" },
         tools: { allow: ["read","write"] },
         mcp: ["db-mcp","a2a-mcp"],
-        promptFile: "./prompts/report_system.md",
+        prompt: "Anda Pencatat Laporan. Sebelum merespons, baca ./SYSTEM.md untuk instruksi lengkap.",
         heartbeat: { every: "${HB_REPORT}", lightContext: false,
-          prompt: "Generate periodic synthesis report. Read CONTEXT.md and all findings.",
+          prompt: "Generate periodic synthesis report. Read ./SYSTEM.md untuk instruksi lengkap.",
           timeoutSeconds: 60 },
       },
     ],
@@ -1138,7 +1155,57 @@ This is the biggest single config change. Replace the existing `agents.json5` wh
 }
 ```
 
-- [ ] **Step 2: Validate the JSON5 parses**
+- [ ] **Step 2: Add the prompt-distribution loop to `setup_vps.sh`**
+
+Workers (heartbeat-driven) read `./HEARTBEAT.md` + `./A2A_PROTOCOL.md` from
+their own workspace each tick. Non-heartbeat agents (orchestrator, polisi,
+report) read `./SYSTEM.md`. We distribute prompts at setup time so the gateway
+finds them at boot.
+
+Append to `scripts/setup_vps.sh` (after the existing workspace-creation
+block):
+
+```bash
+# ── Distribute prompts into each agent's workspace ─────────────────────────
+echo "[7/7] Distributing prompts to agent workspaces"
+mkdir -p ~/lacakin/workspace-{main,cctv,marketplace,parts,sosmed,polisi,report}
+
+# A2A_PROTOCOL.md goes into every worker workspace (the heartbeat agents).
+for w in cctv marketplace parts sosmed report; do
+  cp openclaw/prompts/A2A_PROTOCOL.md ~/lacakin/workspace-$w/A2A_PROTOCOL.md
+done
+
+# Heartbeat prompts: one per worker, renamed to HEARTBEAT.md
+cp openclaw/prompts/heartbeat_cctv.md         ~/lacakin/workspace-cctv/HEARTBEAT.md
+cp openclaw/prompts/heartbeat_marketplace.md  ~/lacakin/workspace-marketplace/HEARTBEAT.md
+cp openclaw/prompts/heartbeat_parts.md        ~/lacakin/workspace-parts/HEARTBEAT.md
+cp openclaw/prompts/heartbeat_sosmed.md       ~/lacakin/workspace-sosmed/HEARTBEAT.md
+
+# System prompts: orchestrator + polisi + report
+cp openclaw/prompts/main_system.md   ~/lacakin/workspace-main/SYSTEM.md
+cp openclaw/prompts/polisi_system.md ~/lacakin/workspace-polisi/SYSTEM.md
+cp openclaw/prompts/report_system.md ~/lacakin/workspace-report/SYSTEM.md
+
+# cctv-bandung also needs cameras.json next to it for the prompt to reference
+cp mcp/browser_mcp/cameras.json ~/lacakin/workspace-cctv/cameras.json
+
+# Re-symlink shared/ into each worker workspace
+for w in main cctv marketplace parts sosmed polisi report; do
+  ln -sfn ~/lacakin/shared ~/lacakin/workspace-$w/shared
+done
+
+echo "Prompts distributed. Re-run this script whenever prompts change."
+```
+
+Run it:
+
+```bash
+bash scripts/setup_vps.sh
+ls ~/lacakin/workspace-cctv/    # should show HEARTBEAT.md, A2A_PROTOCOL.md, cameras.json, shared/
+ls ~/lacakin/workspace-main/    # should show SYSTEM.md, shared/
+```
+
+- [ ] **Step 3: Validate the JSON5 parses**
 
 ```bash
 python -c "import json5; json5.load(open('openclaw/agents.json5'))"
@@ -1148,11 +1215,11 @@ python -c "import json5; json5.load(open('openclaw/agents.json5'))"
 
 Expected: no errors.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add openclaw/agents.json5
-git commit -m "feat(gateway): multi-bot bindings, broadcast, identities, a2a allowlist"
+git add openclaw/agents.json5 scripts/setup_vps.sh
+git commit -m "feat(gateway): multi-bot bindings, broadcast, prompt distribution"
 ```
 
 ---
@@ -1826,6 +1893,21 @@ git commit -m "feat(demo): real reference + staged frames + fixture registration
 - [ ] `.env.demo` sourced (`source scripts/start_gateway.sh demo` doesn't actually start, dry-run with `bash -n`)
 - [ ] All 7 bots `getMe` returns expected username (run command from `botfather_checklist.md`)
 - [ ] Telegram group has all 7 bots as admins
+- [ ] **Bot-to-bot mention smoke** — confirms cross-bot @-mentions reach the mentioned bot's `getUpdates`. Critical for the visible-coordination wow layer.
+  ```bash
+  # Post from one bot, mentioning another:
+  curl -s "https://api.telegram.org/bot$TELEGRAM_TOKEN_CCTV/sendMessage" \
+       -d "chat_id=$LACAKIN_GROUP_ID" \
+       -d "text=smoke: @cadang_bot please respond"
+  sleep 2
+  # Confirm the parts bot received it:
+  curl -s "https://api.telegram.org/bot$TELEGRAM_TOKEN_PARTS/getUpdates" \
+       | jq '.result[-1].message.text'
+  ```
+  Expected: prints `"smoke: @cadang_bot please respond"`. If empty or missing,
+  re-run `@BotFather /setprivacy → Disable` on `@cadang_bot` and try again.
+  If still empty, **fall back: drop visible @-mentions from prompts, rely on
+  A2A inbox only** (the prompts can stay as-is; nothing else breaks).
 - [ ] `python scripts/serve_demo_assets.py &` running; `curl http://localhost:8765/cctv_clips/dago-simpang.html` returns the HTML
 - [ ] `python scripts/seed_demo.py` ran without error
 - [ ] `python scripts/register_demo_fixtures.py` ran without error
