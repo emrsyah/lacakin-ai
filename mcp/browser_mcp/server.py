@@ -18,7 +18,7 @@ import re
 import time
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote_plus, urlparse
 
 from mcp.server.fastmcp import FastMCP
 from playwright.async_api import async_playwright, Browser
@@ -102,6 +102,8 @@ async def list_cameras(near_lat: float | None = None, near_lon: float | None = N
 _SEARCH_URLS = {
     "tokopedia": "https://www.tokopedia.com/search?st=product&q={q}",
     "olx":       "https://www.olx.co.id/items/q-{q}",
+    "facebook":  "https://web.facebook.com/marketplace/bandung/search/?query={q}&locale=id_ID",
+    "facebook_marketplace": "https://web.facebook.com/marketplace/bandung/search/?query={q}&locale=id_ID",
 }
 
 
@@ -111,7 +113,11 @@ async def marketplace_search(platform: str, query: str, limit: int = 10) -> list
     if platform not in _SEARCH_URLS:
         return [{"error": f"unknown platform {platform}"}]
 
-    url = _SEARCH_URLS[platform].format(q=query.replace(" ", "+" if platform == "tokopedia" else "-"))
+    if platform in ("facebook", "facebook_marketplace", "tokopedia"):
+        encoded_query = quote_plus(query)
+    else:
+        encoded_query = query.replace(" ", "-")
+    url = _SEARCH_URLS[platform].format(q=encoded_query)
     browser = await _get_browser()
     ctx = await browser.new_context(user_agent=(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -125,8 +131,10 @@ async def marketplace_search(platform: str, query: str, limit: int = 10) -> list
         # Generic, brittle selectors — refine per platform during H3-H7.
         if platform == "tokopedia":
             cards = await page.query_selector_all('[data-testid="divProductWrapper"]')
-        else:  # olx
+        elif platform == "olx":
             cards = await page.query_selector_all('a[data-aut-id="itemBox"]')
+        else:  # Facebook Marketplace
+            cards = await page.query_selector_all('a[href*="/marketplace/item/"]')
 
         results: list[dict[str, Any]] = []
         for card in cards[:limit]:
@@ -141,8 +149,14 @@ async def marketplace_search(platform: str, query: str, limit: int = 10) -> list
                 price_match = re.search(r"Rp[\s\.\d]+", text)
                 price = price_match.group(0) if price_match else None
                 location = next((l for l in lines if any(k in l.lower() for k in ("bandung", "jabar", "jawa barat"))), None)
+                if href and href.startswith("http"):
+                    result_url = href
+                elif platform in ("facebook", "facebook_marketplace"):
+                    result_url = f"https://web.facebook.com{href or ''}"
+                else:
+                    result_url = f"https://www.{platform}.co.id{href or ''}"
                 results.append({
-                    "url": href if href and href.startswith("http") else f"https://www.{platform}.co.id{href or ''}",
+                    "url": result_url,
                     "title": title,
                     "price": price,
                     "image_url": img_url,
