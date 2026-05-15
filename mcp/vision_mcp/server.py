@@ -2,8 +2,9 @@
 vision-mcp: image similarity (Jina CLIP v2 API) + license plate OCR (Claude Haiku vision).
 
 Tools:
-  - match_image(reference_path, candidate_path) -> {score: 0..1, reasoning}
-  - read_plate(image_path)                      -> {plate: str|null, raw: [str], confidence}
+  - match_image(reference_path, candidate_path)  -> {score: 0..1, reasoning}
+  - match_text_image(text, image_path)           -> {score: 0..1, reasoning}
+  - read_plate(image_path)                       -> {plate: str|null, raw: [str], confidence}
   - reason_about_candidate(image_path, context_md, source_type) -> structured JSON
 """
 from __future__ import annotations
@@ -56,6 +57,15 @@ def _embed_images(paths: list[str]) -> list[list[float]]:
     return [item["embedding"] for item in data["data"]]
 
 
+def _embed_mixed(items: list[dict]) -> list[list[float]]:
+    """Call Jina API on a mixed list of {'text': ...} / {'image': b64} payloads."""
+    import requests
+    payload = {"model": JINA_MODEL, "input": items}
+    resp = requests.post(JINA_API_URL, headers=_jina_headers(), json=payload, timeout=15)
+    resp.raise_for_status()
+    return [item["embedding"] for item in resp.json()["data"]]
+
+
 def _cosine(a: list[float], b: list[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))
     na = math.sqrt(sum(x * x for x in a))
@@ -91,6 +101,42 @@ def match_image(reference_path: str, candidate_path: str) -> dict[str, Any]:
                 "high visual similarity" if score >= 0.75
                 else "moderate similarity" if score >= 0.55
                 else "low similarity"
+            ),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@mcp.tool()
+def match_text_image(text: str, image_path: str) -> dict[str, Any]:
+    """Cosine similarity between a free-text query and an image via Jina CLIP v2.
+
+    Use this when the agent only has a textual description of the target (case
+    description for CCTV, search query for sosmed) and a fresh screenshot.
+
+    Text↔image cosines sit much lower than image↔image — Jina CLIP v2 typical:
+      < 0.18  → drop silently
+      0.18–0.25 → log only
+      ≥ 0.25  → advance to Stage-2 vision LLM reasoning
+    """
+    if not text or not text.strip():
+        return {"error": "empty text"}
+    if not Path(image_path).exists():
+        return {"error": f"image not found: {image_path}"}
+    try:
+        embs = _embed_mixed([
+            {"text": text.strip()},
+            {"image": _img_to_b64(image_path)},
+        ])
+        raw = _cosine(embs[0], embs[1])
+        score = round(max(0.0, min(1.0, raw)), 3)
+        return {
+            "score": score,
+            "raw_cosine": round(raw, 3),
+            "reasoning": (
+                "high text-image similarity" if score >= 0.30
+                else "moderate text-image similarity" if score >= 0.20
+                else "low text-image similarity"
             ),
         }
     except Exception as e:
@@ -150,7 +196,10 @@ def read_plate(image_path: str) -> dict[str, Any]:
         return {"error": str(e)}
 
 
-from mcp.vision_mcp.sonnet_reason import reason_about_candidate as _reason
+try:
+    from .sonnet_reason import reason_about_candidate as _reason
+except ImportError:
+    from sonnet_reason import reason_about_candidate as _reason
 
 
 @mcp.tool()
