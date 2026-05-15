@@ -1,5 +1,8 @@
 # Lacakin — Multi-Agent Stolen-Motorcycle Tracker
 
+<img width="1672" height="941" alt="ChatGPT Image 15 Mei 2026, 20 32 33" src="https://github.com/user-attachments/assets/6e242949-5ef2-4edc-86ff-c7232cd6d559" />
+
+
 > Built for **Agenthon 2026** (12-hour hackathon) on top of the **OpenClaw**
 > multi-agent orchestration framework.
 
